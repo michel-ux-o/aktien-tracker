@@ -1,5 +1,4 @@
-import { PGlite } from "@electric-sql/pglite";
-import type { Transaction as PGliteTransaction } from "@electric-sql/pglite";
+import type { PGlite, Transaction as PGliteTransaction } from "@electric-sql/pglite";
 import { Pool } from "pg";
 import type { PoolClient } from "pg";
 import type { Database, QueryResult, SqlClient } from "./types";
@@ -76,6 +75,8 @@ export async function createPGliteDatabase(instance: PGlite, schema: string, own
 export async function openDatabase(options: { url?: string; dataDir?: string; schema: string; ssl?: boolean }): Promise<Database> {
   const quotedSchema = quoteSchema(options.schema);
   if (!options.url) {
+    // Load PGlite (WASM) only when needed; production with DATABASE_URL never pays its memory cost.
+    const { PGlite } = await import("@electric-sql/pglite");
     const instance = new PGlite(options.dataDir);
     try {
       return await createPGliteDatabase(instance, options.schema, true);

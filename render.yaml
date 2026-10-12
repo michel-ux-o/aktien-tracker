@@ -9,7 +9,8 @@ services:
     # die SMTP-Ports 25/465/587 – deshalb nutzt Resend unten Port 2587.
     plan: free
     buildCommand: npm ci --include=dev && npm run build
-    startCommand: npm start
+    # Direkt mit node statt über npm: spart den zusätzlichen npm-Prozess. Heap-Grenze unter den 512 MB des free-Plans.
+    startCommand: node --enable-source-maps --max-old-space-size=384 dist-server/index.js
     healthCheckPath: /api/status
     envVars:
       - key: NODE_VERSION

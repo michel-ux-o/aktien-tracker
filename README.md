@@ -21,8 +21,8 @@ Danach im Browser **http://localhost:5173** öffnen, ein Konto registrieren und 
 | `npm run dev` | Entwicklung: API-Server und Vite-Dev-Server mit Hot Reload |
 | `npm test` | Alle Tests (Vitest) |
 | `npm run typecheck` | TypeScript-Prüfung |
-| `npm run build` | Typprüfung und Produktions-Build der Oberfläche nach `dist/` |
-| `npm start` | Produktion: ein Server (Port 3001) liefert API und gebaute Oberfläche aus |
+| `npm run build` | Typprüfung, Produktions-Build der Oberfläche nach `dist/` und des Servers nach `dist-server/` |
+| `npm start` | Produktion: startet den gebauten Server (Port 3001), der API und Oberfläche ausliefert; vorher `npm run build` |
 
 ## Betriebsmodi
 
@@ -62,7 +62,7 @@ Betrieb: **Render** (Web-Service, Frankfurt) + **Supabase** (PostgreSQL, Frankfu
 
 1. Im Render-Dashboard **New → Blueprint** wählen und dieses GitHub-Repository verbinden (bei privaten Repos Render den Zugriff in GitHub erlauben).
 2. Render fragt die geheimen Werte ab: `DATABASE_URL` (Supabase), `TWELVE_DATA_API_KEY` (leer = Demo-Modus), `SMTP_PASSWORD` (Resend-API-Schlüssel) und `SMTP_FROM` (z. B. `Aktien-Tracker <noreply@deine-domain.de>`). Sie werden nur bei Render gespeichert, nie im Repository.
-3. **Apply** klicken. Render installiert, baut (`npm ci --include=dev && npm run build`), startet `npm start` und prüft `/api/status`. Beim ersten Start legt die App ihre Tabellen in Supabase an. Jeder Push auf den Hauptzweig löst danach automatisch ein neues Deployment aus.
+3. **Apply** klicken. Render installiert, baut (`npm ci --include=dev && npm run build`), startet den gebauten Server (`node dist-server/index.js`) und prüft `/api/status`. Beim ersten Start legt die App ihre Tabellen in Supabase an. Jeder Push auf den Hauptzweig löst danach automatisch ein neues Deployment aus.
 
 Die öffentliche Adresse (`https://….onrender.com`) wird automatisch als `APP_URL` für Reset-Links verwendet (`RENDER_EXTERNAL_URL`); eine eigene Domain kann über `APP_URL` gesetzt werden. `TRUST_PROXY=1` sorgt dafür, dass die Ratenbegrenzung hinter dem Render-Proxy die echte Client-IP sieht. Schlägt der Mailversand fehl, antwortet die App trotzdem normal und protokolliert den Fehler im Render-Log.
 
