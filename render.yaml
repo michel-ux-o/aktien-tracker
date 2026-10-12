@@ -1,0 +1,45 @@
+# Render Blueprint: Web-Service (API + Oberfläche) und PostgreSQL-Datenbank.
+# In Render: New → Blueprint → dieses Repository wählen. Geheimnisse (sync: false) fragt Render beim ersten Anlegen ab.
+services:
+  - type: web
+    name: aktien-tracker
+    runtime: node
+    region: frankfurt
+    # free: schläft nach 15 Min. ohne Zugriffe ein und blockiert ausgehendes SMTP (Ports 25/465/587).
+    # Für E-Mail-Versand und ohne Einschlafen z. B. 0.5c-512mb wählen.
+    plan: free
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/status
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: NODE_ENV
+        value: production
+      - key: TRUST_PROXY
+        value: "1"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: aktien-tracker-db
+          property: connectionString
+      # Leer lassen = Demo-Modus („Demo – keine echten Marktdaten“).
+      - key: TWELVE_DATA_API_KEY
+        sync: false
+      # Optional für Passwort-Reset-E-Mails (nicht auf dem Free-Plan, siehe oben).
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: SMTP_FROM
+        sync: false
+
+databases:
+  - name: aktien-tracker-db
+    region: frankfurt
+    # Kleinster bezahlter Plan. "free" läuft nach 30 Tagen ab, danach werden die Daten gelöscht.
+    plan: 0.1c-256mb
+    postgresMajorVersion: "17"
+    # Nur Verbindungen aus dem Render-internen Netz, kein Zugriff aus dem Internet.
+    ipAllowList: []
