@@ -1,12 +1,12 @@
-# Render Blueprint: Web-Service (API + Oberfläche) und PostgreSQL-Datenbank.
+# Render Blueprint: Web-Service (API + Oberfläche). Datenbank: Supabase (PostgreSQL), E-Mail: Resend (SMTP).
 # In Render: New → Blueprint → dieses Repository wählen. Geheimnisse (sync: false) fragt Render beim ersten Anlegen ab.
 services:
   - type: web
     name: aktien-tracker
     runtime: node
     region: frankfurt
-    # free: schläft nach 15 Min. ohne Zugriffe ein und blockiert ausgehendes SMTP (Ports 25/465/587).
-    # Für E-Mail-Versand und ohne Einschlafen z. B. 0.5c-512mb wählen.
+    # free: schläft nach 15 Min. ohne Zugriffe ein (Aufwachen ca. 1 Min.). Ausgehend blockiert Render auf free
+    # die SMTP-Ports 25/465/587 – deshalb nutzt Resend unten Port 2587.
     plan: free
     buildCommand: npm ci --include=dev && npm run build
     startCommand: npm start
@@ -18,28 +18,24 @@ services:
         value: production
       - key: TRUST_PROXY
         value: "1"
+      # Supabase Session-Pooler (IPv4, Port 5432), nicht der Transaction-Pooler (6543):
+      # postgresql://postgres.<projekt-ref>:<passwort>@aws-1-eu-central-1.pooler.supabase.com:5432/postgres
       - key: DATABASE_URL
-        fromDatabase:
-          name: aktien-tracker-db
-          property: connectionString
+        sync: false
+      - key: DATABASE_SSL
+        value: "true"
       # Leer lassen = Demo-Modus („Demo – keine echten Marktdaten“).
       - key: TWELVE_DATA_API_KEY
         sync: false
-      # Optional für Passwort-Reset-E-Mails (nicht auf dem Free-Plan, siehe oben).
+      # Resend per SMTP. Passwort = Resend-API-Schlüssel; Absender muss zu einer bei Resend verifizierten Domain gehören.
       - key: SMTP_HOST
-        sync: false
+        value: smtp.resend.com
+      - key: SMTP_PORT
+        value: "2587"
       - key: SMTP_USER
-        sync: false
+        value: resend
       - key: SMTP_PASSWORD
         sync: false
+      # z. B. Aktien-Tracker <noreply@deine-domain.de>
       - key: SMTP_FROM
         sync: false
-
-databases:
-  - name: aktien-tracker-db
-    region: frankfurt
-    # Kleinster bezahlter Plan. "free" läuft nach 30 Tagen ab, danach werden die Daten gelöscht.
-    plan: 0.1c-256mb
-    postgresMajorVersion: "17"
-    # Nur Verbindungen aus dem Render-internen Netz, kein Zugriff aus dem Internet.
-    ipAllowList: []

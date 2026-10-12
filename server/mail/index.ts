@@ -20,7 +20,9 @@ export function createMailerFromEnv(env: NodeJS.ProcessEnv = process.env): Maile
   const transport = nodemailer.createTransport({
     host,
     port,
-    secure: port === 465,
+    // 465/2465 = implizites TLS; auf den Submission-Ports 587/2587 (z. B. Resend) STARTTLS erzwingen.
+    secure: port === 465 || port === 2465,
+    requireTLS: port === 587 || port === 2587,
     ...(env.SMTP_USER ? { auth: { user: env.SMTP_USER, pass: env.SMTP_PASSWORD ?? "" } } : {}),
   });
   return {

@@ -51,18 +51,26 @@ Der Schlüssel bleibt auf dem Server; der Browser spricht nur mit der eigenen AP
 
 ## Veröffentlichen auf Render
 
-Das Repository enthält einen Render-Blueprint (`render.yaml`) mit Web-Service und PostgreSQL-Datenbank in Frankfurt.
+Betrieb: **Render** (Web-Service, Frankfurt) + **Supabase** (PostgreSQL, Frankfurt) + **Resend** (E-Mail per SMTP). Die Konfiguration steht im Render-Blueprint `render.yaml`.
+
+**Einmalig vorbereiten**
+
+- *Supabase:* Projekt anlegen (Region `eu-central-1`). Als `DATABASE_URL` die **Session-Pooler**-Verbindung verwenden (Dashboard → Connect → Session pooler, Port 5432): Sie ist per IPv4 erreichbar. Nicht den Transaction-Pooler (Port 6543) nutzen – die App setzt das Schema (`demo`/`live`) pro Verbindung, das ginge dort verloren.
+- *Resend:* Domain unter **Domains** hinzufügen und die angezeigten DNS-Einträge (SPF/DKIM) beim Domain-Anbieter setzen, bis sie als *Verified* erscheint. Dann unter **API Keys** einen Schlüssel mit „Sending access“ anlegen. Ohne verifizierte Domain stellt Resend nur an die eigene Konto-Adresse zu.
+
+**Deployment**
 
 1. Im Render-Dashboard **New → Blueprint** wählen und dieses GitHub-Repository verbinden (bei privaten Repos Render den Zugriff in GitHub erlauben).
-2. Render fragt die geheimen Werte ab: `TWELVE_DATA_API_KEY` (leer = Demo-Modus) und optional `SMTP_*`. Sie werden nur bei Render gespeichert, nie im Repository.
-3. **Apply** klicken. Render installiert, baut (`npm ci --include=dev && npm run build`), startet `npm start` und prüft `/api/status`. Jeder Push auf den Hauptzweig löst danach automatisch ein neues Deployment aus.
+2. Render fragt die geheimen Werte ab: `DATABASE_URL` (Supabase), `TWELVE_DATA_API_KEY` (leer = Demo-Modus), `SMTP_PASSWORD` (Resend-API-Schlüssel) und `SMTP_FROM` (z. B. `Aktien-Tracker <noreply@deine-domain.de>`). Sie werden nur bei Render gespeichert, nie im Repository.
+3. **Apply** klicken. Render installiert, baut (`npm ci --include=dev && npm run build`), startet `npm start` und prüft `/api/status`. Beim ersten Start legt die App ihre Tabellen in Supabase an. Jeder Push auf den Hauptzweig löst danach automatisch ein neues Deployment aus.
 
-Die öffentliche Adresse (`https://….onrender.com`) wird automatisch als `APP_URL` für Reset-Links verwendet (`RENDER_EXTERNAL_URL`); eine eigene Domain kann über `APP_URL` gesetzt werden. `TRUST_PROXY=1` sorgt dafür, dass die Ratenbegrenzung hinter dem Render-Proxy die echte Client-IP sieht. Die Datenbank ist nur aus dem Render-internen Netz erreichbar.
+Die öffentliche Adresse (`https://….onrender.com`) wird automatisch als `APP_URL` für Reset-Links verwendet (`RENDER_EXTERNAL_URL`); eine eigene Domain kann über `APP_URL` gesetzt werden. `TRUST_PROXY=1` sorgt dafür, dass die Ratenbegrenzung hinter dem Render-Proxy die echte Client-IP sieht. Schlägt der Mailversand fehl, antwortet die App trotzdem normal und protokolliert den Fehler im Render-Log.
 
-**Pläne und Kosten** (vor dem Anwenden in `render.yaml` anpassbar):
+**Pläne und Kosten** – alles auf den kostenlosen Plänen möglich, mit diesen Einschränkungen:
 
-- Web-Service `free`: schläft nach 15 Minuten ohne Zugriffe ein (Aufwachen ca. 1 Minute) und blockiert ausgehende SMTP-Ports – Passwort-Reset-E-Mails funktionieren dort nicht. Für E-Mail-Versand einen bezahlten Plan wählen (z. B. `0.5c-512mb`).
-- Datenbank `0.1c-256mb`: kleinster bezahlter Plan, Daten bleiben dauerhaft erhalten. Der Plan `free` würde nach 30 Tagen ablaufen und danach gelöscht.
+- Render `free`: schläft nach 15 Minuten ohne Zugriffe ein (Aufwachen ca. 1 Minute). Ausgehend sind die SMTP-Ports 25/465/587 gesperrt; Resend wird daher über Port **2587** (STARTTLS) angesprochen.
+- Supabase Free: 500 MB Datenbank; das Projekt **pausiert nach 7 Tagen ohne Datenbankzugriffe**. Die Daten bleiben erhalten, das Projekt muss dann im Supabase-Dashboard wieder gestartet werden.
+- Resend Free: 100 E-Mails pro Tag, 3.000 pro Monat.
 
 ## Tech-Stack und Begründung
 
