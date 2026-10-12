@@ -7,3 +7,4 @@ data/pglite/
 !.env.example
 *.log
 .claude/settings.local.json
+supabase/.temp/
